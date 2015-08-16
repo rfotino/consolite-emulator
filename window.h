@@ -1,0 +1,28 @@
+#ifndef EMU_WINDOW_H
+#define EMU_WINDOW_H
+
+#include <X11/Xlib.h>
+#include <cairo/cairo.h>
+#include <cairo/cairo-xlib.h>
+#include "vidmem.h"
+#include "defs.h"
+
+class EmuWindow {
+ public:
+  EmuWindow(EmuVideoMemory *vid_mem);
+  ~EmuWindow();
+  void eventLoop();
+  bool hasError() { return _error; }
+
+ private:
+  void _draw();
+  cairo_surface_t *_surface;
+  Display *_display;
+  Atom _wmDeleteMessage;
+  EmuVideoMemory *_vidMem;
+  bool _error;
+  int _width;
+  int _height;
+};
+
+#endif
