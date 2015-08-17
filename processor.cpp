@@ -73,6 +73,22 @@ void EmuProcessor::_setInstructionPointer(const uint16_t& ip) {
   _instructionPointer = ip & 0xfffc;
 }
 
+void EmuProcessor::_setFlags(const uint32_t& dest,
+                             const uint32_t& src,
+                             const uint32_t& result) {
+  // Overflow set if sign bit set for a and b but not for c,
+  // or if sign bit not set for a and b but set for c.
+  _overflowFlag =
+    ((0x8000 & dest) && (0x8000 & src) && !(0x8000 & result)) ||
+    (!(0x8000 & dest) && !(0x8000 & src) && (0x8000 & result));
+  // Carry set if c is too large to fit into 16 bits.
+  _carryFlag = 0xffff < result;
+  // Zero set if the result was zero.
+  _zeroFlag = !(0xffff & result);
+  // Sign flag set if the sign bit of the result is set.
+  _signFlag = 0x8000 & result;
+}
+
 void EmuProcessor::execute() {
   while (_running) {
     // Execute next instruction
@@ -80,9 +96,18 @@ void EmuProcessor::execute() {
     uint8_t opcode = inst[0];
     uint8_t arg1 = inst[1];
     uint8_t arg2 = inst[2];
-    uint16_t argA = *((uint16_t *)&inst[1]);
-    uint16_t argB = *((uint16_t *)&inst[2]);
+    uint8_t reg1 = arg1 & 0xf;
+    uint8_t reg2 = arg2 & 0xf;
+    uint16_t argA = (inst[1] << 8) | inst[2];
+    uint16_t argB = (inst[2] << 8) | inst[3];
+
+    uint32_t dest = _registers[reg1];
+    uint32_t src = _registers[reg2];
+    uint32_t result;
+
     uint16_t nextInstPtr = _instructionPointer + INST_SIZE;
+    bool clearFlags = true;
+
     switch (opcode) {
     case OPCODE_NOP:
     default:
@@ -107,96 +132,140 @@ void EmuProcessor::execute() {
     case OPCODE_LOAD:
       // LOAD DEST SRC
       // Load the memory pointed to by SRC and put it in DEST.
-      _registers[arg1] = _mainMem[_registers[arg2]];
+      _registers[reg1] = _mainMem[src];
       break;
     case OPCODE_LOADI:
       // LOADI DEST ADDR
       // Load the memory at ADDR and put it in DEST.
-      _registers[arg1] = _mainMem[argB];
+      _registers[reg1] = _mainMem[argB];
       break;
     case OPCODE_MOV:
       // MOV DEST SRC
-      _registers[arg1] = _registers[arg2];
+      _registers[reg1] = src;
       break;
     case OPCODE_MOVI:
       // MOV DEST VALUE
-      _registers[arg1] = argB;
+      _registers[reg1] = argB;
       break;
     case OPCODE_PUSH:
       // PUSH REG
-      _push(_registers[arg1]);
+      _push(dest);
       break;
     case OPCODE_POP:
       // POP REG
-      _registers[arg1] = _pop();
+      _registers[reg1] = _pop();
       break;
     case OPCODE_ADD:
       // ADD DEST SRC
-      _registers[arg1] += _registers[arg2];
+      _registers[reg1] += src;
+      // Set flags
+      result = dest + src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_SUB:
       // SUB DEST SRC
-      _registers[arg1] -= _registers[arg2];
+      _registers[reg1] -= src;
+      // Set flags
+      result = dest - src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_MUL:
       // MUL DEST SRC
-      _registers[arg1] *= _registers[arg2];
+      _registers[reg1] *= src;
+      // Set flags
+      result = dest * src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_DIV:
       // DIV DEST SRC
-      _registers[arg1] /= _registers[arg2];
+      _registers[reg1] /= src;
+      // Set flags
+      result = dest / src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_AND:
       // AND DEST SRC
-      _registers[arg1] &= _registers[arg2];
+      _registers[reg1] &= src;
+      // Set flags
+      result = dest & src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_OR:
       // OR DEST SRC
-      _registers[arg1] |= _registers[arg2];
+      _registers[reg1] |= src;
+      // Set flags
+      result = dest | src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_XOR:
       // XOR DEST SRC
-      _registers[arg1] ^= _registers[arg2];
+      _registers[reg1] ^= src;
+      // Set flags
+      result = dest ^ src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_SHL:
       // SHL DEST SRC
-      _registers[arg1] <<= _registers[arg2];
+      _registers[reg1] <<= src;
+      // Set flags
+      result = dest << src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_SHRA:
       // SHRA DEST SRC
       // Arithmetic right shift, we have to make sure to sign extend
-      _registers[arg1] = (uint8_t)((int8_t)_registers[arg1] >> _registers[arg2]);
+      _registers[reg1] = (uint16_t)((int16_t)dest >> src);
+      // Set flags
+      result = (uint32_t)((int32_t)dest >> src);
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_SHRL:
       // SHRL DEST SRC
       // Logical right shift, no sign extend
-      _registers[arg1] >>= _registers[arg2];
+      _registers[reg1] >>= src;
+      // Set flags
+      result = dest >> src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_CMP:
       // CMP DEST SRC
-      // Do DEST - SRC and set the flags, but discard the result.
-      // TODO: Implement CMP
+      // Does DEST - SRC and sets flags.
+      result = dest - src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_TST:
       // TST DEST SRC
       // Do DEST & SRC and set the flags, but discard the result.
-      // TODO: Implement TST
+      result = dest & src;
+      _setFlags(dest, src, result);
+      clearFlags = false;
       break;
     case OPCODE_COLOR:
       // COLOR REG
       // Sets the value of the color register equal to the value
       // of the argument register.
-      _colorRegister = (uint8_t)_registers[arg1];
+      _colorRegister = (uint8_t)_registers[reg1];
       break;
     case OPCODE_PIXEL:
       // PIXEL X Y
       // Sets the point (X, Y) equal to the value of the color register
-      _window->setPixel(arg1, arg2, _colorRegister);
+      _window->setPixel(_registers[reg1], _registers[reg2], _colorRegister);
       break;
     case OPCODE_JMP:
       // JMP REG
       // Jumps to the address value in REG.
-      nextInstPtr = _registers[arg1];
+      nextInstPtr = _registers[reg1];
       break;
     case OPCODE_JMPI:
       // JMPI ADDR
@@ -291,5 +360,12 @@ void EmuProcessor::execute() {
 
     // Set the instruction pointer to its new position
     _setInstructionPointer(nextInstPtr);
+    // Clear the flags if they were not set somewhere else
+    if (clearFlags) {
+      _overflowFlag = false;
+      _carryFlag = false;
+      _zeroFlag = false;
+      _signFlag = false;
+    }
   }
 }
