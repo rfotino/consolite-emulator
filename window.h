@@ -12,6 +12,9 @@ class EmuWindow {
   EmuWindow(EmuVideoMemory *vid_mem);
   ~EmuWindow();
   void eventLoop();
+  void setPixel(const uint8_t& x,
+                const uint8_t& y,
+                const uint8_t& color);
   bool hasError() { return _error; }
 
  private:

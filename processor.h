@@ -3,18 +3,21 @@
 
 #include <unistd.h>
 #include <string>
-#include "vidmem.h"
+#include "window.h"
 #include "defs.h"
 
 class EmuProcessor {
  public:
-  EmuProcessor(EmuVideoMemory *vid_mem, const std::string& infile_name);
+  EmuProcessor(EmuWindow *window, const std::string& infile_name);
   void execute();
   bool hasError() { return _error; }
   void setRunning(bool running) { _running = running; }
 
  private:
-  EmuVideoMemory *_vidMem;
+  void _push(const uint16_t& val);
+  uint16_t _pop();
+  void _setInstructionPointer(const uint16_t& ip);
+  EmuWindow *_window;
   uint8_t _mainMem[MAIN_MEMORY_SIZE];
   uint16_t _registers[NUM_REGISTERS];
   uint16_t _instructionPointer;

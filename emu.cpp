@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   
   EmuVideoMemory vidMem;
   EmuWindow window(&vidMem);
-  EmuProcessor processor(&vidMem, argv[1]);
+  EmuProcessor processor(&window, argv[1]);
   if (window.hasError() || processor.hasError()) {
     return 1;
   }

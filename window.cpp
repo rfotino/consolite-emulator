@@ -67,6 +67,14 @@ void EmuWindow::_draw() {
   // TODO: Draw window from video memory
 }
 
+void EmuWindow::setPixel(const uint8_t& x,
+                         const uint8_t& y,
+                         const uint8_t& color) {
+  // Set the pixel's value in video memory
+  _vidMem->set(x, y, color);
+  // TODO: Draw pixel to window
+}
+
 void EmuWindow::eventLoop() {
   // The running variable is set to false when the user
   // closes the window, which breaks out of the event loop.
