@@ -15,6 +15,7 @@ class EmuWindow {
   void setPixel(const uint8_t& x,
                 const uint8_t& y,
                 const uint8_t& color);
+  uint8_t getInput(const uint16_t& input_id);
   bool hasError() { return _error; }
 
  private:

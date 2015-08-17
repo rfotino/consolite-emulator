@@ -75,12 +75,23 @@ void EmuProcessor::_setInstructionPointer(const uint16_t& ip) {
 
 void EmuProcessor::_setFlags(const uint32_t& dest,
                              const uint32_t& src,
-                             const uint32_t& result) {
-  // Overflow set if sign bit set for a and b but not for c,
-  // or if sign bit not set for a and b but set for c.
-  _overflowFlag =
-    ((0x8000 & dest) && (0x8000 & src) && !(0x8000 & result)) ||
-    (!(0x8000 & dest) && !(0x8000 & src) && (0x8000 & result));
+                             const uint32_t& result,
+                             const uint8_t& opcode) {
+  // Overflow set if we added two positives and got a negative,
+  // added two negatives and got a positive, subtracted a positive
+  // from a negative and got a positive, or subtracted a negative
+  // from a positive and got a negative
+  if (OPCODE_ADD == opcode) {
+    _overflowFlag =
+      ((0x8000 & dest) && (0x8000 & src) && !(0x8000 & result)) ||
+      (!(0x8000 & dest) && !(0x8000 & src) && (0x8000 & result));
+  } else if (OPCODE_SUB == opcode || OPCODE_CMP == opcode) {
+    _overflowFlag =
+      ((0x8000 & dest) && !(0x8000 & src) && !(0x8000 & result)) ||
+      (!(0x8000 & dest) && (0x8000 & src) && (0x8000 & result));
+  } else {
+    _overflowFlag = false;
+  }
   // Carry set if c is too large to fit into 16 bits.
   _carryFlag = 0xffff < result;
   // Zero set if the result was zero.
@@ -114,7 +125,10 @@ void EmuProcessor::execute() {
       // Do nothing
       break;
     case OPCODE_INPUT:
-      // TODO: Implement input
+      // INPUT DEST SRC
+      // Where DEST is the register where the input data will be
+      // stored and SRC holds the input ID that we want to check
+      _registers[reg1] = _window->getInput(src);
       break;
     case OPCODE_CALL:
       // CALL ADDR
@@ -160,7 +174,6 @@ void EmuProcessor::execute() {
       _registers[reg1] += src;
       // Set flags
       result = dest + src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_SUB:
@@ -168,7 +181,6 @@ void EmuProcessor::execute() {
       _registers[reg1] -= src;
       // Set flags
       result = dest - src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_MUL:
@@ -176,7 +188,6 @@ void EmuProcessor::execute() {
       _registers[reg1] *= src;
       // Set flags
       result = dest * src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_DIV:
@@ -184,7 +195,6 @@ void EmuProcessor::execute() {
       _registers[reg1] /= src;
       // Set flags
       result = dest / src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_AND:
@@ -192,7 +202,6 @@ void EmuProcessor::execute() {
       _registers[reg1] &= src;
       // Set flags
       result = dest & src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_OR:
@@ -200,7 +209,6 @@ void EmuProcessor::execute() {
       _registers[reg1] |= src;
       // Set flags
       result = dest | src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_XOR:
@@ -208,7 +216,6 @@ void EmuProcessor::execute() {
       _registers[reg1] ^= src;
       // Set flags
       result = dest ^ src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_SHL:
@@ -216,7 +223,6 @@ void EmuProcessor::execute() {
       _registers[reg1] <<= src;
       // Set flags
       result = dest << src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_SHRA:
@@ -225,7 +231,6 @@ void EmuProcessor::execute() {
       _registers[reg1] = (uint16_t)((int16_t)dest >> src);
       // Set flags
       result = (uint32_t)((int32_t)dest >> src);
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_SHRL:
@@ -234,21 +239,18 @@ void EmuProcessor::execute() {
       _registers[reg1] >>= src;
       // Set flags
       result = dest >> src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_CMP:
       // CMP DEST SRC
       // Does DEST - SRC and sets flags.
       result = dest - src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_TST:
       // TST DEST SRC
       // Do DEST & SRC and set the flags, but discard the result.
       result = dest & src;
-      _setFlags(dest, src, result);
       clearFlags = false;
       break;
     case OPCODE_COLOR:
@@ -366,6 +368,8 @@ void EmuProcessor::execute() {
       _carryFlag = false;
       _zeroFlag = false;
       _signFlag = false;
+    } else {
+      _setFlags(dest, src, result, opcode);
     }
   }
 }

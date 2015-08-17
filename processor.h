@@ -19,7 +19,8 @@ class EmuProcessor {
   void _setInstructionPointer(const uint16_t& ip);
   void _setFlags(const uint32_t& dest,
                  const uint32_t& src,
-                 const uint32_t& result);
+                 const uint32_t& result,
+                 const uint8_t& opcode);
   EmuWindow *_window;
   uint8_t _mainMem[MAIN_MEMORY_SIZE];
   uint16_t _registers[NUM_REGISTERS];

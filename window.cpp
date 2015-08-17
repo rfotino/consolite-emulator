@@ -75,6 +75,11 @@ void EmuWindow::setPixel(const uint8_t& x,
   // TODO: Draw pixel to window
 }
 
+uint8_t EmuWindow::getInput(const uint16_t& input_id) {
+  // TODO: Store input values and return them here.
+  return input_id ? 0 : 0;
+}
+
 void EmuWindow::eventLoop() {
   // The running variable is set to false when the user
   // closes the window, which breaks out of the event loop.
