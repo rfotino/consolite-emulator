@@ -36,7 +36,12 @@ EmuProcessor::EmuProcessor(EmuWindow *window,
 
   // Read file contents into main memory
   memset(_mainMem, 0, sizeof(_mainMem));
-  input.get((char *)_mainMem, file_size);
+  char c;
+  uint16_t pos = 0;
+  while (input.get(c)) {
+    _mainMem[pos] = c;
+    pos++;
+  }
 
   // Initialize registers and other data
   memset(_registers, 0, sizeof(_registers));
