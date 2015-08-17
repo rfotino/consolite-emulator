@@ -43,6 +43,9 @@ EmuWindow::EmuWindow(EmuVideoMemory *vid_mem)
     std::cerr << "Error: Cannot get cairo Xlib surface." << std::endl;
     return;
   }
+
+  // Create the cairo object from the window surface
+  _cairo = cairo_create(_surface);
   
   // Intercept the WM_DELETE_WINDOW message from the window
   // manager so that we can close the window when the user hits
@@ -57,6 +60,8 @@ EmuWindow::EmuWindow(EmuVideoMemory *vid_mem)
 }
 
 EmuWindow::~EmuWindow() {
+  // Destroy the cairo object
+  cairo_destroy(_cairo);
   // Destroy the cairo Xlib surface
   cairo_surface_destroy(_surface);
   // Close the connection to the X server
@@ -64,7 +69,21 @@ EmuWindow::~EmuWindow() {
 }
 
 void EmuWindow::_draw() {
-  // TODO: Draw window from video memory
+  // Draw pixels from video memory to window
+  for (int i = 0; i < _vidMem->getWidth(); i++) {
+    for (int j = 0; j < _vidMem->getHeight(); j++) {
+      int x = i * _width / _vidMem->getWidth();
+      int y = j * _height / _vidMem->getHeight();
+      int w = ((i + 1) * _width / _vidMem->getWidth()) - x;
+      int h = ((j + 1) * _height / _vidMem->getHeight()) - y;
+      cairo_set_source_rgb(_cairo,
+                           _vidMem->getRed(i, j) / 255.0f,
+                           _vidMem->getGreen(i, j) / 255.0f,
+                           _vidMem->getBlue(i, j) / 255.0f);
+      cairo_rectangle(_cairo, x, y, w, h);
+      cairo_fill(_cairo);
+    }
+  }
 }
 
 void EmuWindow::setPixel(const uint8_t& x,

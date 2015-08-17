@@ -21,6 +21,7 @@ class EmuWindow {
  private:
   void _draw();
   cairo_surface_t *_surface;
+  cairo_t *_cairo;
   Display *_display;
   Atom _wmDeleteMessage;
   EmuVideoMemory *_vidMem;
