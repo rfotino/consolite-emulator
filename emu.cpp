@@ -1,5 +1,5 @@
 #include <X11/Xlib.h>
-#include <pthread.h>
+#include <thread>
 #include <iostream>
 #include "vidmem.h"
 #include "window.h"
@@ -9,16 +9,12 @@ void usage(std::string program_name) {
   std::cerr << "Usage: " << program_name << " INFILE" << std::endl;
 }
 
-void *win_thread_start(void *win_void_ptr) {
-  EmuWindow *window = (EmuWindow *)win_void_ptr;
+void win_thread_start(EmuWindow *window) {
   window->eventLoop();
-  return nullptr;
 }
 
-void *proc_thread_start(void *proc_void_ptr) {
-  EmuProcessor *processor = (EmuProcessor *)proc_void_ptr;
+void proc_thread_start(EmuProcessor *processor) {
   processor->execute();
-  return nullptr;
 }
 
 int main(int argc, char **argv) {
@@ -35,31 +31,13 @@ int main(int argc, char **argv) {
   }
 
   // Start up separate threads for the UI and processor
-  pthread_t winThread;
-  pthread_t procThread;
-  if (0 != pthread_create(&winThread, nullptr, win_thread_start, &window)) {
-    std::cerr << "Error: Failed to start window thread, exiting now."
-              << std::endl;
-    return 1;
-  }
-  if (0 != pthread_create(&procThread, nullptr, proc_thread_start, &processor)) {
-    std::cerr << "Error: Failed to start processor thread, exiting now."
-              << std::endl;
-    return 1;
-  }
+  std::thread winThread(win_thread_start, &window);
+  std::thread procThread(proc_thread_start, &processor);
 
   // Join the threads
-  if (0 != pthread_join(winThread, nullptr)) {
-    std::cerr << "Error: Failed to join window thread, exiting now."
-              << std::endl;
-    return 1;
-  }
+  winThread.join();
   processor.setRunning(false);
-  if (0 != pthread_join(procThread, nullptr)) {
-    std::cerr << "Error: Failed to join processor thread, exiting now."
-              << std::endl;
-    return 1;
-  }
+  procThread.join();
   
   return 0;
 }
