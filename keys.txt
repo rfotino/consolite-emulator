@@ -1,0 +1,12 @@
+space 0
+
+Up    1
+Left  2
+Down  3
+Right 4
+
+w     5
+a     6
+s     7
+d     8
+

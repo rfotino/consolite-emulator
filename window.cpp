@@ -1,3 +1,5 @@
+#include <fstream>
+#include <sstream>
 #include <iostream>
 #include "window.h"
 
@@ -6,6 +8,9 @@ EmuWindow::EmuWindow(EmuVideoMemory *vid_mem)
                       _error(false),
                       _width(DEFAULT_WINDOW_WIDTH),
                       _height(DEFAULT_WINDOW_HEIGHT) {
+  // Read key mapping into memory
+  _loadKeyMap();
+
   // Open a connection to the X server.
   _display = XOpenDisplay(nullptr);
   if (nullptr == _display) {
@@ -54,7 +59,8 @@ EmuWindow::EmuWindow(EmuVideoMemory *vid_mem)
   XSetWMProtocols(_display, window, &_wmDeleteMessage, 1);
   // Select the kind of window events we want to intercept.
   // StructureNotifyMask lets us intercept window resize events.
-  XSelectInput(_display, window, ExposureMask | StructureNotifyMask);
+  XSelectInput(_display, window, ExposureMask | StructureNotifyMask |
+                                 KeyPressMask | KeyReleaseMask);
   // "Map" (show) the window.
   XMapWindow(_display, window);
 }
@@ -68,8 +74,41 @@ EmuWindow::~EmuWindow() {
   XCloseDisplay(_display);
 }
 
+void EmuWindow::_loadKeyMap() {
+  std::ifstream keyMapFile(KEYMAP_FILENAME);
+  if (!keyMapFile.good()) {
+    _error = true;
+    std::cerr << "Error: Failed to open keys.txt." << std::endl;
+    return;
+  }
+  // Key map should be in the form
+  // KEY INPUT_ID
+  std::string line;
+  int line_num = 0;
+  while (std::getline(keyMapFile, line)) {
+    line_num++;
+    std::istringstream iss(line);
+    std::string keyStr;
+    int inputId;
+    if (!(iss >> keyStr >> inputId)) {
+      continue;
+    }
+    KeySym keysym = XStringToKeysym(keyStr.c_str());
+    if (!keysym) {
+      std::cerr << "Warning: Key '" << keyStr << "' not recognized in "
+                << KEYMAP_FILENAME << " on line " << line << "."
+                << std::endl;
+      continue;
+    }
+    _keyMap[inputId] = keysym;
+  }
+}
+
 void EmuWindow::_draw() {
   // Draw pixels from video memory to window
+  // TODO: This should be done in a separate thread, and subsequent
+  // calls to _draw() should abort the current drawing operation
+  // before starting again.
   for (int i = 0; i < _vidMem->getWidth(); i++) {
     for (int j = 0; j < _vidMem->getHeight(); j++) {
       int x = i * _width / _vidMem->getWidth();
@@ -94,9 +133,44 @@ void EmuWindow::setPixel(const uint8_t& x,
   // TODO: Draw pixel to window
 }
 
-uint8_t EmuWindow::getInput(const uint16_t& input_id) {
-  // TODO: Store input values and return them here.
-  return input_id ? 0 : 0;
+uint16_t EmuWindow::getInput(const uint16_t& input_id) {
+  // Return current input status. If this input_id is
+  // not registered to a key or button, return 0.
+  auto keySymPtr = _keyMap.find(input_id);
+  if (_keyMap.end() == keySymPtr) {
+    // This input isn't mapped to anything.
+    return 0;
+  }
+  auto statePtr = _keyState.find(keySymPtr->second);
+  if (_keyState.end() == statePtr) {
+    // This key hasn't been pressed or released.
+    return 0;
+  }
+  return statePtr->second;
+}
+
+void EmuWindow::_updateKeyState(const XKeyEvent& event) {
+  // Filter out auto repeat key events
+  if (event.type == KeyRelease && XPending(_display)) {
+    XEvent nev;
+    XPeekEvent(_display, &nev);
+    if (nev.type == KeyPress &&
+        nev.xkey.time == event.time &&
+        nev.xkey.keycode == event.keycode) {
+      // Key wasn't really released, get rid of the
+      // pending KeyPress event and return
+      XNextEvent(_display, &nev);
+      return;
+    }
+  }
+  int keysyms_per_keycode_return;
+  KeySym *keysym = XGetKeyboardMapping(_display,
+                                       event.keycode,
+                                       1,
+                                       &keysyms_per_keycode_return);
+  uint16_t status = KeyPress == event.type ? 1 : 0;
+  _keyState[keysym[0]] = status;
+  XFree(keysym);
 }
 
 void EmuWindow::eventLoop() {
@@ -107,6 +181,10 @@ void EmuWindow::eventLoop() {
     XEvent event;
     XNextEvent(_display, &event);
     switch (event.type) {
+    case KeyPress:
+    case KeyRelease:
+      _updateKeyState(event.xkey);
+      break;
     case Expose:
       // Draw to the window
       _draw();
@@ -127,7 +205,6 @@ void EmuWindow::eventLoop() {
         running = false;
       }
       break;
-
     default:
       break;
     }
