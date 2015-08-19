@@ -184,7 +184,6 @@ void EmuWindow::eventLoop() {
     timer.tv_sec = 0;
     if (0 == select(x11_fd + 1, &event_fds, 0, 0, &timer)) {
       // Timer expired
-      std::cout << "Broke out of the window to draw." << std::endl;
       _draw();
       continue;
     }
