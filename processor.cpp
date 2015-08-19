@@ -1,3 +1,4 @@
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -101,6 +102,15 @@ void EmuProcessor::_setFlags(const uint32_t& dest,
 }
 
 void EmuProcessor::execute() {
+  // The value of the clock at the last time we encountered
+  // a TIMERST instruction.
+  clock_t timeSinceRst = clock();
+
+  // Seeds the random number generator (crude, but you probably
+  // aren't going to be running this emulator more than once
+  // per second).
+  srand(time(nullptr));
+
   while (_running) {
     // Execute next instruction
     uint8_t *inst = &_mainMem[_instructionPointer];
@@ -263,6 +273,31 @@ void EmuProcessor::execute() {
       // PIXEL X Y
       // Sets the point (X, Y) equal to the value of the color register
       _window->setPixel(_registers[reg1], _registers[reg2], _colorRegister);
+      break;
+    case OPCODE_STOR:
+      // STOR DEST SRC
+      // DEST is the value you are storing, SRC is the address you
+      // are storing it to.
+      _mainMem[src] = dest;
+      break;
+    case OPCODE_STORI:
+      // STORI DEST ADDR
+      // Store the value in DEST to the literal address in main memory.
+      _mainMem[argB] = dest;
+      break;
+    case OPCODE_TIME:
+      // TIME DEST
+      // Store the time since last TIMERST (in milliseconds) into DEST
+      _registers[reg1] = ((clock() - timeSinceRst) * 1000) / CLOCKS_PER_SEC;
+      break;
+    case OPCODE_TIMERST:
+      // Resets the timer to 0
+      timeSinceRst = clock();
+      break;
+    case OPCODE_RND:
+      // RND DEST
+      // Gets a random 16-bit value and stores it in DEST
+      _registers[reg1] = rand() & 0xffff;
       break;
     case OPCODE_JMP:
       // JMP REG

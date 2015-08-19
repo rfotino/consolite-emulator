@@ -37,6 +37,11 @@
 #define OPCODE_TST   0x15
 #define OPCODE_COLOR 0x16
 #define OPCODE_PIXEL 0x17
+#define OPCODE_STOR  0x18
+#define OPCODE_STORI 0x19
+#define OPCODE_TIME  0x1A
+#define OPCODE_TIMERST 0x1B
+#define OPCODE_RND   0x1C
 #define OPCODE_JMP   0x30
 #define OPCODE_JMPI  0x31
 #define OPCODE_JEQ   0x32
