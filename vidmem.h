@@ -1,24 +1,25 @@
 #ifndef EMU_VIDMEM_H
 #define EMU_VIDMEM_H
 
+#include <cairo/cairo.h>
 #include <stdint.h>
 #include "defs.h"
 
 class EmuVideoMemory {
  public:
   EmuVideoMemory();
+  ~EmuVideoMemory();
 
-  uint8_t get(const uint8_t& x, const uint8_t& y) const;
-  uint8_t getRed(const uint8_t& x, const uint8_t& y) const;
-  uint8_t getGreen(const uint8_t& x, const uint8_t& y) const;
-  uint8_t getBlue(const uint8_t& x, const uint8_t& y) const;
+  void initImage(cairo_surface_t *window_surface);
   int getWidth() { return VIDEO_WIDTH; }
   int getHeight() { return VIDEO_HEIGHT; }
+  cairo_surface_t *getBuffer() { return _buffer; }
 
   void set(const uint8_t& x, const uint8_t& y, const uint8_t& color);
 
  private:
-  uint8_t _mem[VIDEO_WIDTH][VIDEO_HEIGHT];
+  cairo_surface_t *_buffer;
+  cairo_t *_cairo;
 };
 
 #endif

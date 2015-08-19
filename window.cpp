@@ -105,24 +105,18 @@ void EmuWindow::_loadKeyMap() {
 }
 
 void EmuWindow::_draw() {
-  // Draw pixels from video memory to window
   // TODO: This should be done in a separate thread, and subsequent
   // calls to _draw() should abort the current drawing operation
   // before starting again.
-  for (int i = 0; i < _vidMem->getWidth(); i++) {
-    for (int j = 0; j < _vidMem->getHeight(); j++) {
-      int x = i * _width / _vidMem->getWidth();
-      int y = j * _height / _vidMem->getHeight();
-      int w = ((i + 1) * _width / _vidMem->getWidth()) - x;
-      int h = ((j + 1) * _height / _vidMem->getHeight()) - y;
-      cairo_set_source_rgb(_cairo,
-                           _vidMem->getRed(i, j) / 255.0f,
-                           _vidMem->getGreen(i, j) / 255.0f,
-                           _vidMem->getBlue(i, j) / 255.0f);
-      cairo_rectangle(_cairo, x, y, w, h);
-      cairo_fill(_cairo);
-    }
-  }
+
+  // Scale and paint the video memory's buffer to the window
+  double scaleX = (double)_width / _vidMem->getWidth();
+  double scaleY = (double)_height / _vidMem->getHeight();
+  cairo_identity_matrix(_cairo);
+  cairo_scale(_cairo, scaleX, scaleY);
+  cairo_set_source_surface(_cairo, _vidMem->getBuffer(), 0, 0);
+  cairo_pattern_set_filter(cairo_get_source(_cairo), CAIRO_FILTER_NEAREST);
+  cairo_paint(_cairo);
 }
 
 void EmuWindow::setPixel(const uint8_t& x,
