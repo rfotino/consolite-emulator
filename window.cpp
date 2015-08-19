@@ -1,3 +1,4 @@
+#include <X11/XKBlib.h>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -63,6 +64,10 @@ EmuWindow::EmuWindow(EmuVideoMemory *vid_mem)
                                  KeyPressMask | KeyReleaseMask);
   // "Map" (show) the window.
   XMapWindow(_display, window);
+  // Suppress auto-repeating KeyRelease events
+  XkbSetDetectableAutoRepeat(_display, 1, 0);
+  // Flush any buffered commands to the X server
+  XFlush(_display);
 }
 
 EmuWindow::~EmuWindow() {
