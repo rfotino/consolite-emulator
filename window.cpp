@@ -105,10 +105,6 @@ void EmuWindow::_loadKeyMap() {
 }
 
 void EmuWindow::_draw() {
-  // TODO: This should be done in a separate thread, and subsequent
-  // calls to _draw() should abort the current drawing operation
-  // before starting again.
-
   // Scale and paint the video memory's buffer to the window
   double scaleX = (double)_width / _vidMem->getWidth();
   double scaleY = (double)_height / _vidMem->getHeight();
@@ -117,6 +113,8 @@ void EmuWindow::_draw() {
   cairo_set_source_surface(_cairo, _vidMem->getBuffer(), 0, 0);
   cairo_pattern_set_filter(cairo_get_source(_cairo), CAIRO_FILTER_NEAREST);
   cairo_paint(_cairo);
+  cairo_surface_flush(_surface);
+  XFlush(_display);
 }
 
 void EmuWindow::setPixel(const uint8_t& x,
@@ -124,7 +122,6 @@ void EmuWindow::setPixel(const uint8_t& x,
                          const uint8_t& color) {
   // Set the pixel's value in video memory
   _vidMem->set(x, y, color);
-  // TODO: Draw pixel to window
 }
 
 uint16_t EmuWindow::getInput(const uint16_t& input_id) {
@@ -168,10 +165,30 @@ void EmuWindow::_updateKeyState(const XKeyEvent& event) {
 }
 
 void EmuWindow::eventLoop() {
+  // Get the file descriptor for the connection to the X server,
+  // so that we can listen for input on a timer instead of blocking
+  // indefinitely on XNextEvent. The reason for this is we need to wake
+  // up every 1/60 of a second to repaint.
+  int x11_fd = ConnectionNumber(_display);
+  fd_set event_fds;
+  struct timeval timer;
   // The running variable is set to false when the user
   // closes the window, which breaks out of the event loop.
   bool running = true;
   while (running) {
+    // Set up the set of file descriptors for select()
+    FD_ZERO(&event_fds);
+    FD_SET(x11_fd, &event_fds);
+    // Set timer to 1/60 of a second
+    timer.tv_usec = 16667;
+    timer.tv_sec = 0;
+    if (0 == select(x11_fd + 1, &event_fds, 0, 0, &timer)) {
+      // Timer expired
+      std::cout << "Broke out of the window to draw." << std::endl;
+      _draw();
+      continue;
+    }
+    // We received an event so handle it here
     XEvent event;
     XNextEvent(_display, &event);
     switch (event.type) {

@@ -16,12 +16,15 @@ EmuVideoMemory::~EmuVideoMemory() {
 void EmuVideoMemory::set(const uint8_t& x,
                          const uint8_t& y,
                          const uint8_t& color) {
-  if (y < VIDEO_HEIGHT) {
-    double red = (color & 0xe0) / 255.0;
-    double green = ((color & 0x1c) << 3) / 255.0;
-    double blue = ((color & 0x3) << 6) / 255.0;
-    cairo_set_source_rgb(_cairo, red, green, blue);
-    cairo_rectangle(_cairo, x, y, 1, 1);
-    cairo_fill(_cairo);
-  }
+  // Decode the color. The most significant three bits represent
+  // red, the middle three bits represent green, and the lowest
+  // two bits represent blue. We want the color as a double from
+  // 0.0 to 1.0 for cairo.
+  double red = (color & 0xe0) / 255.0;
+  double green = ((color & 0x1c) << 3) / 255.0;
+  double blue = ((color & 0x3) << 6) / 255.0;
+  // Paint the pixel specified by (x, y) to the buffer
+  cairo_set_source_rgb(_cairo, red, green, blue);
+  cairo_rectangle(_cairo, x, y, 1, 1);
+  cairo_fill(_cairo);
 }
