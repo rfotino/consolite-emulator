@@ -55,15 +55,15 @@ EmuProcessor::EmuProcessor(EmuWindow *window,
 }
 
 void EmuProcessor::_push(const uint16_t& val) {
+  _registers[REG_SP] += 2;
   uint16_t sp = _registers[REG_SP];
   _mainMem[sp] = val >> 8;
   _mainMem[sp+1] = val & 0xff;
-  _registers[REG_SP] += 2;
 }
 
 uint16_t EmuProcessor::_pop() {
   uint16_t sp = _registers[REG_SP];
-  uint16_t val = *((uint16_t *)&_mainMem[sp]);
+  uint16_t val = (_mainMem[sp] << 8) | _mainMem[sp+1];
   _registers[REG_SP] -= 2;
   return val;
 }
