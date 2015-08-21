@@ -156,12 +156,12 @@ void EmuProcessor::execute() {
     case OPCODE_LOAD:
       // LOAD DEST SRC
       // Load the memory pointed to by SRC and put it in DEST.
-      _registers[reg1] = _mainMem[src];
+      _registers[reg1] = (_mainMem[src] << 8) | _mainMem[src+1];
       break;
     case OPCODE_LOADI:
       // LOADI DEST ADDR
       // Load the memory at ADDR and put it in DEST.
-      _registers[reg1] = _mainMem[argB];
+      _registers[reg1] = (_mainMem[argB] << 8) | _mainMem[argB+1];
       break;
     case OPCODE_MOV:
       // MOV DEST SRC
@@ -278,12 +278,14 @@ void EmuProcessor::execute() {
       // STOR DEST SRC
       // DEST is the value you are storing, SRC is the address you
       // are storing it to.
-      _mainMem[src] = dest;
+      _mainMem[src] = dest >> 8;
+      _mainMem[src+1] = dest & 0xff;
       break;
     case OPCODE_STORI:
       // STORI DEST ADDR
       // Store the value in DEST to the literal address in main memory.
-      _mainMem[argB] = dest;
+      _mainMem[argB] = dest >> 8;
+      _mainMem[argB+1] = dest & 0xff;
       break;
     case OPCODE_TIME:
       // TIME DEST
