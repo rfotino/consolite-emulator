@@ -6,7 +6,7 @@
 #include "processor.h"
 
 void usage(std::string program_name) {
-  std::cerr << "Usage: " << program_name << " INFILE" << std::endl;
+  std::cerr << "Usage: " << program_name << " INFILE [KEYMAP]" << std::endl;
 }
 
 void win_thread_start(EmuWindow *window) {
@@ -18,13 +18,20 @@ void proc_thread_start(EmuProcessor *processor) {
 }
 
 int main(int argc, char **argv) {
-  if (2 != argc) {
+  if (2 != argc && 3 != argc) {
     usage(argv[0]);
     return 1;
   }
+
+  std::string keymap;
+  if (3 == argc) {
+    keymap = argv[2];
+  } else {
+    keymap = DEFAULT_KEYMAP_FILENAME;
+  }
   
   EmuVideoMemory vidMem;
-  EmuWindow window(&vidMem);
+  EmuWindow window(&vidMem, keymap);
   EmuProcessor processor(&window, argv[1]);
   if (window.hasError() || processor.hasError()) {
     return 1;

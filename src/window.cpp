@@ -4,13 +4,14 @@
 #include <iostream>
 #include "window.h"
 
-EmuWindow::EmuWindow(EmuVideoMemory *vid_mem) 
+EmuWindow::EmuWindow(EmuVideoMemory *vid_mem,
+                     const std::string& keymap_filename)
                     : _vidMem(vid_mem),
                       _error(false),
                       _width(DEFAULT_WINDOW_WIDTH),
                       _height(DEFAULT_WINDOW_HEIGHT) {
   // Read key mapping into memory
-  _loadKeyMap();
+  _loadKeyMap(keymap_filename);
 
   // Open a connection to the X server.
   _display = XOpenDisplay(nullptr);
@@ -79,11 +80,12 @@ EmuWindow::~EmuWindow() {
   XCloseDisplay(_display);
 }
 
-void EmuWindow::_loadKeyMap() {
-  std::ifstream keyMapFile(KEYMAP_FILENAME);
+void EmuWindow::_loadKeyMap(const std::string& keymap_filename) {
+  std::ifstream keyMapFile(keymap_filename);
   if (!keyMapFile.good()) {
     _error = true;
-    std::cerr << "Error: Failed to open keys.txt." << std::endl;
+    std::cerr << "Error: Failed to open keymap '"
+              << keymap_filename << "'." << std::endl;
     return;
   }
   // Key map should be in the form
@@ -101,7 +103,7 @@ void EmuWindow::_loadKeyMap() {
     KeySym keysym = XStringToKeysym(keyStr.c_str());
     if (!keysym) {
       std::cerr << "Warning: Key '" << keyStr << "' not recognized in "
-                << KEYMAP_FILENAME << " on line " << line << "."
+                << keymap_filename << " on line " << line << "."
                 << std::endl;
       continue;
     }

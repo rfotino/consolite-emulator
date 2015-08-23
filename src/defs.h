@@ -11,7 +11,7 @@
 #define NUM_REGISTERS 16
 #define INST_SIZE 4
 
-#define KEYMAP_FILENAME "keys.txt"
+#define DEFAULT_KEYMAP_FILENAME "keys.txt"
 
 #define OPCODE_NOP   0x00
 #define OPCODE_INPUT 0x01

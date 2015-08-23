@@ -10,7 +10,7 @@
 
 class EmuWindow {
  public:
-  EmuWindow(EmuVideoMemory *vid_mem);
+  EmuWindow(EmuVideoMemory *vid_mem, const std::string& keymap_filename);
   ~EmuWindow();
   void eventLoop();
   void setPixel(const uint8_t& x,
@@ -20,7 +20,7 @@ class EmuWindow {
   bool hasError() { return _error; }
 
  private:
-  void _loadKeyMap();
+  void _loadKeyMap(const std::string& keymap_filename);
   void _draw();
   void _updateKeyState(const XKeyEvent& event);
 
