@@ -1,7 +1,7 @@
 # Consolite Emulator
 
 This program takes in a binary file created with the
-[Consolite Assembler](https://github.com/rfotino/consolite-asm-cpp)
+[Consolite Assembler](https://github.com/rfotino/consolite-assembler)
 and executes it, emulating the display, main memory, registers, and
 input. The display is emulated with an X window, and keys on your
 keyboard can be mapped to input_ids with a keymap file.
