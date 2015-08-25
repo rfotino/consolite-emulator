@@ -1,3 +1,8 @@
+/**
+ * Consolite Emulator
+ * Copyright (c) 2015 Robert Fotino, All Rights Reserved
+ */
+
 #include <X11/XKBlib.h>
 #include <fstream>
 #include <sstream>

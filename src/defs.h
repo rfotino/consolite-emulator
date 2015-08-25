@@ -1,3 +1,8 @@
+/**
+ * Consolite Emulator
+ * Copyright (c) 2015 Robert Fotino, All Rights Reserved
+ */
+
 #ifndef EMU_DEFS_H
 #define EMU_DEFS_H
 
