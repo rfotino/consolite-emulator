@@ -41,3 +41,7 @@ any of the defines in [keysymdef.h](http://www.cl.cam.ac.uk/~mgk25/ucs/keysymdef
 without the 'XK_' prefix. `INPUT_ID` is an integer ID used by instructions
 in the emulator. For example, you might want a key press from ID 0 to start
 the game, so you map the spacebar to ID 0 in the keymap file.
+
+## Copyright
+
+Copyright (c) 2015 Robert Fotino, All Rights Reserved
