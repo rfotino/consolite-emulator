@@ -207,10 +207,16 @@ void EmuProcessor::execute() {
       break;
     case OPCODE_DIV:
       // DIV DEST SRC
-      _registers[reg1] /= src;
-      // Set flags
-      result = dest / src;
-      clearFlags = false;
+      // Check for divide by zero error, in which case we set the
+      // destination to all ones.
+      if (0 == src) {
+        _registers[reg1] = 0xffff;
+      } else {
+        _registers[reg1] /= src;
+        // Set flags
+        result = dest / src;
+        clearFlags = false;
+      }
       break;
     case OPCODE_AND:
       // AND DEST SRC
