@@ -156,7 +156,8 @@ void EmuProcessor::execute() {
       // RET NUM
       // Pop the instruction pointer off the stack, add the provided
       // argument, and jump to it.
-      nextInstPtr = _pop() + arg1 + INST_SIZE;
+      nextInstPtr = _pop() + INST_SIZE;
+      _registers[REG_SP] -= arg1;
       break;
     case OPCODE_LOAD:
       // LOAD DEST SRC
