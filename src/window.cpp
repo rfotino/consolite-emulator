@@ -88,7 +88,6 @@ EmuWindow::~EmuWindow() {
 void EmuWindow::_loadKeyMap(const std::string& keymap_filename) {
   std::ifstream keyMapFile(keymap_filename);
   if (!keyMapFile.good()) {
-    _error = true;
     std::cerr << "Error: Failed to open keymap '"
               << keymap_filename << "'." << std::endl;
     return;
